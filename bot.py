@@ -75,8 +75,25 @@ def load_czech_dictionary(path="czech.txt"):
                 words.add(normalize(word))
     return words
 
+# ====== NAČTENÍ SLOVENSKÉHO SLOVNÍKU ======
+def load_slovak_dictionary(path="sk.txt"):
+    words = set()
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            for line in f:
+                word = line.strip().lower()
+                if word.isalpha():
+                    words.add(normalize(word))
+    except FileNotFoundError:
+        print(f"⚠️ Slovenský slovník {path} nenalezen!")
+    return words
+
+
 VALID_WORDS = load_czech_dictionary()
-print(f"📚 Načteno {len(VALID_WORDS)} českých slov")
+slovak_words = load_slovak_dictionary()
+VALID_WORDS.update(slovak_words)  # spojíme oba slovníky
+
+print(f"📚 Načteno {len(VALID_WORDS)} českých a slovenských slov")
 
 # ====== FILTR SPROSTÝCH SLOV ======
 RAW_BAD_WORDS = {
@@ -212,4 +229,5 @@ async def main():
 
 if __name__ == "__main__":
     # spustíme hlavní async funkci bezpečně
+
     asyncio.run(main())
