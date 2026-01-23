@@ -232,9 +232,6 @@ async def on_message(message: discord.Message):
                 await message.delete()
                 return
 
-            if message.author.id == message.mentions[0].id:
-                await message.delete()
-                return  # zákaz bodování sebe sama
 
             target = message.mentions[0]
             points = 1 if lines[0] == "+1b" else -1
@@ -304,4 +301,5 @@ if __name__ == "__main__":
     # spustíme hlavní async funkci bezpečně
 
     asyncio.run(main())
+
 
