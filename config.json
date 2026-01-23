@@ -1,5 +1,7 @@
 {
     "listening_channel_id": 1459172607890034719,
     "counting_channel_id": 1459168855841575192,
-    "last_number": 272
+    "last_number": 272,
+    "rating_channel_id": null,
+    "points": {}
 }
