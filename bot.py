@@ -1,6 +1,7 @@
 import os
 import discord
 import unicodedata
+import re
 import asyncio
 from discord.ext import commands
 from discord import app_commands
@@ -226,22 +227,17 @@ async def on_message(message: discord.Message):
 
     if rating_channel_id and message.channel.id == rating_channel_id:
         lines = message.content.strip().splitlines()
+        if len(lines) >= 2:
+            match = re.match(r"([+-]\d+)b", lines[0].replace(" ", ""))
+            if match and message.mentions:
+                points = int(match.group(1))
+                target = message.mentions[0]
 
-        if len(lines) >= 2 and lines[0] in {"+1b", "-1b"}:
-            if not message.mentions:
-                await message.delete()
-                return
 
-
-            target = message.mentions[0]
-            points = 1 if lines[0] == "+1b" else -1
-
-            user_id = str(target.id)
-            config["points"][user_id] = config["points"].get(user_id, 0) + points
-
-            save_config(config)
-            await message.add_reaction("✅")
-            return
+                user_id = str(target.id)
+                config["points"][user_id] = config["points"].get(user_id, 0) + points
+                save_config(config)
+                await message.add_reaction("✅")
 
     
     await bot.process_commands(message)
@@ -301,5 +297,6 @@ if __name__ == "__main__":
     # spustíme hlavní async funkci bezpečně
 
     asyncio.run(main())
+
 
 
