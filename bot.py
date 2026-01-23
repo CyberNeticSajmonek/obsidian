@@ -51,7 +51,9 @@ def load_config():
         return {
             "listening_channel_id": None,
             "counting_channel_id": None,
-            "last_number": None
+            "last_number": None,
+            "rating_channel_id": None,
+            "points": {}
         }
 
 def save_config(config):
@@ -220,7 +222,78 @@ async def on_message(message: discord.Message):
         else:
             await message.delete()
 
+    rating_channel_id = config.get("rating_channel_id")
+
+    if rating_channel_id and message.channel.id == rating_channel_id:
+        lines = message.content.strip().splitlines()
+
+        if len(lines) >= 2 and lines[0] in {"+1b", "-1b"}:
+            if not message.mentions:
+                await message.delete()
+                return
+
+            if message.author.id == message.mentions[0].id:
+                await message.delete()
+                return  # zákaz bodování sebe sama
+
+            target = message.mentions[0]
+            points = 1 if lines[0] == "+1b" else -1
+
+            user_id = str(target.id)
+            config["points"][user_id] = config["points"].get(user_id, 0) + points
+
+            save_config(config)
+            await message.add_reaction("✅")
+            return
+
+    
     await bot.process_commands(message)
+
+
+
+
+
+@bot.tree.command(
+    name="set-hodnoceni",
+    description="Nastaví aktuální kanál pro hodnocení bodů"
+)
+@app_commands.checks.has_permissions(administrator=True)
+async def set_hodnoceni(interaction: discord.Interaction):
+    config["rating_channel_id"] = interaction.channel.id
+    save_config(config)
+    await interaction.response.send_message(
+        f"✅ Hodnocení bodů nastaveno v kanálu {interaction.channel.mention}",
+        ephemeral=True
+    )
+
+
+@bot.tree.command(
+    name="body",
+    description="Vypíše bodové hodnocení"
+)
+async def body(interaction: discord.Interaction):
+    points = config.get("points", {})
+
+    if not points:
+        await interaction.response.send_message("📭 Zatím nejsou žádné body.")
+        return
+
+    sorted_points = sorted(points.items(), key=lambda x: x[1], reverse=True)
+
+    lines = []
+    for user_id, score in sorted_points:
+        try:
+            user = await bot.fetch_user(int(user_id))
+            name = user.name
+        except:
+            name = f"Uživatel {user_id}"
+
+        lines.append(f"**{name}**: {score} bodů")
+
+    await interaction.response.send_message(
+        "🏆 **Bodové hodnocení:**\n" + "\n".join(lines)
+    )
+
 
 async def main():
     print("⏳ Čekám 5 sekund před přihlášením bota…")
@@ -231,3 +304,4 @@ if __name__ == "__main__":
     # spustíme hlavní async funkci bezpečně
 
     asyncio.run(main())
+
