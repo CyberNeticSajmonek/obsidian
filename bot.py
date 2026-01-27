@@ -233,34 +233,22 @@ async def on_message(message: discord.Message):
 
     await bot.process_commands(message)
 
-# ====== UKONČENÍ A SPRÁVNÉ ZAVŘENÍ SESSION ======
-def close_bot_session():
-    if bot.http._HTTPClient__session:
-        asyncio.run(bot.http._HTTPClient__session.close())
-
-atexit.register(close_bot_session)
-
 # ====== ROBUSTNÍ START BOTA ======
-async def main():
-    print("⏳ Čekám 5 sekund před přihlášením bota…")
-    await asyncio.sleep(5)
-
-    while True:
-        try:
-            await bot.start(TOKEN)
-        except discord.HTTPException as e:
-            if e.status == 429:
-                print("⚠️ Rate limited od Discordu, čekám 15 sekund...")
-                await asyncio.sleep(15)
-            else:
-                raise e
-        except KeyboardInterrupt:
-            print("🚀 Ukončuji bota...")
-            await bot.close()
-            break
-        except Exception as ex:
-            print("❌ Neočekávaná chyba:", ex)
-            await asyncio.sleep(5)
+async def start_bot():
+    try:
+        await bot.start(TOKEN)
+    finally:
+        # bezpečné uzavření interní session bota
+        await bot.close()
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    # vytvoří nový loop a spustí bot uvnitř něj
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+    try:
+        loop.run_until_complete(start_bot())
+    except KeyboardInterrupt:
+        print("🚀 Ukončuji bota...")
+        loop.run_until_complete(bot.close())
+    finally:
+        loop.close()
