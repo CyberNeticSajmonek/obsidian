@@ -9,6 +9,7 @@ from dotenv import load_dotenv
 import json
 from flask import Flask
 from threading import Thread
+import atexit
 
 # ====== Flask server pro uptime ======
 app = Flask("")
@@ -232,6 +233,13 @@ async def on_message(message: discord.Message):
 
     await bot.process_commands(message)
 
+# ====== UKONČENÍ A SPRÁVNÉ ZAVŘENÍ SESSION ======
+def close_bot_session():
+    if bot.http._HTTPClient__session:
+        asyncio.run(bot.http._HTTPClient__session.close())
+
+atexit.register(close_bot_session)
+
 # ====== ROBUSTNÍ START BOTA ======
 async def main():
     print("⏳ Čekám 5 sekund před přihlášením bota…")
@@ -243,9 +251,13 @@ async def main():
         except discord.HTTPException as e:
             if e.status == 429:
                 print("⚠️ Rate limited od Discordu, čekám 15 sekund...")
-                await asyncio.sleep(15)  # backoff při 429
+                await asyncio.sleep(15)
             else:
                 raise e
+        except KeyboardInterrupt:
+            print("🚀 Ukončuji bota...")
+            await bot.close()
+            break
         except Exception as ex:
             print("❌ Neočekávaná chyba:", ex)
             await asyncio.sleep(5)
